@@ -1,5 +1,7 @@
 import { useConnectors, useAccount } from "@starknet-react/core";
 import { Provider, Contract, Account, ec, json } from "starknet";
+import React, { useState, useEffect } from 'react';
+
 
 const getTokenContract = async () => {
   const provider = new Provider({ sequencer: { network: "goerli-alpha" } });
@@ -15,13 +17,6 @@ const getTokenContract = async () => {
   return myTestContract;
 };
 
-const allow = async (account) => {
-  const tokenContract = await getTokenContract();
-  tokenContract.connect(account);
-  console.log(tokenContract);
-  const allow = await tokenContract.invoke("request_allowlist");
-};
-
 const getTokens = async (account) => {
   const tokenContract = await getTokenContract();
   tokenContract.connect(account);
@@ -29,8 +24,30 @@ const getTokens = async (account) => {
 };
 
 export default function Home() {
-  const { account, address, status } = useAccount();
-  const { connect, connectors } = useConnectors();
+  const { account, address, status } = useAccount()
+  const {connect, connectors} = useConnectors()
+  const [allowShow, setAllowShow] = useState(false)
+  const [permissionShow, setPermissionShow] = useState(false)
+
+  useEffect(() => {
+    if (allowShow) {
+      setTimeout(() => {
+        setAllowShow(false)
+      }, 5000);
+    } })
+    
+
+  const allow = async (account) => {
+    const provider = new Provider({ sequencer: { network: "goerli-alpha" } });
+    const tokenContract = await getTokenContract();
+    tokenContract.connect(account)
+    const allow = await tokenContract.invoke("request_allowlist")
+    const txReceiptDeployTest = await provider.waitForTransaction(allow.transaction_hash)
+    if (txReceiptDeployTest.status == "PENDING") {
+      setAllowShow(true)
+    }
+  };
+
   return (
     <div>
       <div className="flex flex-row justify-between w-screen text-xl p-4">
@@ -63,6 +80,8 @@ export default function Home() {
           Mint Tokens!
         </button>
       </div>
+      {allowShow ? (<div>transaction pending</div>) : (<div></div>)}
+
     </div>
   );
 }
